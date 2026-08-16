@@ -1,0 +1,15 @@
+from django.urls import path
+from . import views
+
+app_name = "dashboard"
+
+urlpatterns = [
+    path("", views.home, name="home"),
+    path("heatmap/", views.heatmap, name="heatmap"),
+    path("routes/plan/", views.route_planner, name="route_planner"),
+    path("routes/<int:route_id>/", views.route_detail, name="route_detail"),
+    path("alerts/", views.alerts_list, name="alerts"),
+
+    path("api/clusters/", views.api_clusters, name="api_clusters"),
+    path("api/routes/<int:route_id>/", views.api_route_data, name="api_route_data"),
+]

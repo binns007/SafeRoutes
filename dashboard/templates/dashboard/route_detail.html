@@ -1,0 +1,49 @@
+{% extends "dashboard/base.html" %}
+{% load static %}
+{% block title %}SafeRoutes &mdash; Route {{ route.source.name }} to {{ route.destination.name }}{% endblock %}
+{% block nav_plan %}active{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1>{{ route.source.name }} &rarr; {{ route.destination.name }}</h1>
+  <p class="lede">
+    Safety buffer: <span class="mono">{{ route.safety_buffer_km }} km</span>
+    &middot; Lowest safety score on planned path:
+    <span class="mono">{% if route.min_safety_score_crossed %}{{ route.min_safety_score_crossed|floatformat:1 }}/100{% else %}n/a{% endif %}</span>
+  </p>
+</div>
+
+<div class="grid grid-2">
+  <div class="card">
+    <div class="map-wrap"><div id="route-map"></div></div>
+    <div class="legend">
+      <span class="legend-item"><span class="legend-dot" style="background:#1E2A4A"></span> Planned path</span>
+      <span class="legend-item"><span class="legend-dot" style="background:#35C4A1"></span> Ping &mdash; safe</span>
+      <span class="legend-item"><span class="legend-dot" style="background:#E8546B"></span> Ping &mdash; unsafe deviation</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Alerts on this journey</h2>
+    {% if alerts %}
+      {% for a in alerts %}
+        <div class="alert-row">
+          <span class="alert-icon {{ a.severity }}"></span>
+          <div>
+            <strong>{{ a.get_severity_display }}</strong>
+            <div style="font-size:0.85rem;color:var(--text-muted);">{{ a.message }}</div>
+          </div>
+        </div>
+      {% endfor %}
+    {% else %}
+      <p style="color:var(--text-muted);">No deviation into an unsafe zone was detected on this simulated journey.</p>
+    {% endif %}
+    <p style="margin-top:18px;"><a class="btn btn-ghost" href="{% url 'dashboard:route_planner' %}">Plan another route</a></p>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>const ROUTE_ID = {{ route.id }};</script>
+<script src="{% static 'dashboard/js/route_detail.js' %}"></script>
+{% endblock %}

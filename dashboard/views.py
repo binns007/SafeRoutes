@@ -1,0 +1,106 @@
+from django.shortcuts import render, redirect, get_object_or_404
+from django.http import JsonResponse
+from django.urls import reverse
+
+from core.models import District
+from clustering.models import SafetyCluster, DistrictClusterAssignment
+from tracking.models import Route, Alert
+from tracking.services import plan_route, simulate_journey
+
+
+def home(request):
+    clusters = SafetyCluster.objects.filter(algorithm="kmeans").order_by("-avg_safety_score")
+    districts = District.objects.select_related("cluster_assignment__cluster").order_by("name")
+    recent_alerts = Alert.objects.select_related("route", "ping")[:5]
+    return render(request, "dashboard/home.html", {
+        "clusters": clusters,
+        "districts": districts,
+        "recent_alerts": recent_alerts,
+        "has_data": districts.exists(),
+        "has_clusters": clusters.exists(),
+    })
+
+
+def heatmap(request):
+    return render(request, "dashboard/heatmap.html", {
+        "has_clusters": SafetyCluster.objects.filter(algorithm="kmeans").exists(),
+    })
+
+
+def route_planner(request):
+    districts = District.objects.order_by("name")
+    if request.method == "POST":
+        source = get_object_or_404(District, pk=request.POST.get("source"))
+        destination = get_object_or_404(District, pk=request.POST.get("destination"))
+        if source.pk == destination.pk:
+            return render(request, "dashboard/route_planner.html", {
+                "districts": districts,
+                "error": "Source and destination must be different districts.",
+            })
+        route = plan_route(source, destination)
+        inject = request.POST.get("simulate_deviation") == "on"
+        simulate_journey(route, inject_deviation=inject)
+        return redirect(reverse("dashboard:route_detail", args=[route.pk]))
+
+    return render(request, "dashboard/route_planner.html", {"districts": districts})
+
+
+def route_detail(request, route_id):
+    route = get_object_or_404(Route, pk=route_id)
+    return render(request, "dashboard/route_detail.html", {
+        "route": route,
+        "alerts": route.alerts.all(),
+    })
+
+
+def alerts_list(request):
+    alerts = Alert.objects.select_related("route", "route__source", "route__destination", "ping")
+    return render(request, "dashboard/alerts.html", {"alerts": alerts})
+
+
+# ---------- JSON endpoints consumed by the map JS ----------
+
+def api_clusters(request):
+    data = []
+    for assignment in DistrictClusterAssignment.objects.select_related("district", "cluster"):
+        d = assignment.district
+        data.append({
+            "id": d.id,
+            "name": d.name,
+            "lat": d.latitude,
+            "lon": d.longitude,
+            "safety_score": assignment.safety_score,
+            "tier": assignment.cluster.tier,
+            "tier_label": assignment.cluster.get_tier_display(),
+            "color": assignment.cluster.color_hex,
+            "crime_rate_per_100k": d.crime_rate_per_100k,
+            "police_per_100k": d.police_per_100k,
+            "literacy_rate": d.literacy_rate,
+        })
+    return JsonResponse({"districts": data})
+
+
+def api_route_data(request, route_id):
+    route = get_object_or_404(Route, pk=route_id)
+    pings = [{
+        "sequence": p.sequence,
+        "lat": p.latitude,
+        "lon": p.longitude,
+        "in_unsafe_zone": p.in_unsafe_zone,
+        "safety_score": p.safety_score_at_point,
+        "nearest_district": p.nearest_district.name if p.nearest_district else None,
+    } for p in route.pings.all()]
+    alerts = [{
+        "sequence": a.ping.sequence,
+        "severity": a.severity,
+        "message": a.message,
+    } for a in route.alerts.select_related("ping").all()]
+    return JsonResponse({
+        "source": route.source.name,
+        "destination": route.destination.name,
+        "waypoints": route.waypoints,
+        "safety_buffer_km": route.safety_buffer_km,
+        "min_safety_score_crossed": route.min_safety_score_crossed,
+        "pings": pings,
+        "alerts": alerts,
+    })

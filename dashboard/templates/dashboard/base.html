@@ -1,0 +1,43 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}SafeRoutes{% endblock %}</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="{% static 'dashboard/css/style.css' %}">
+  {% block extra_head %}{% endblock %}
+</head>
+<body>
+
+  <nav class="topnav">
+    <a href="{% url 'dashboard:home' %}" class="brand">
+      <span class="brand-mark"></span> SafeRoutes
+    </a>
+    <div class="nav-links">
+      <a href="{% url 'dashboard:home' %}" class="{% block nav_home %}{% endblock %}">Overview</a>
+      <a href="{% url 'dashboard:heatmap' %}" class="{% block nav_heatmap %}{% endblock %}">Safety Map</a>
+      <a href="{% url 'dashboard:route_planner' %}" class="{% block nav_plan %}{% endblock %}">Plan a Route</a>
+      <a href="{% url 'dashboard:alerts' %}" class="{% block nav_alerts %}{% endblock %}">Alerts</a>
+      <a href="/admin/" class="">Admin</a>
+    </div>
+  </nav>
+
+  <main class="page">
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer class="site-footer">
+    SafeRoutes &mdash; a data-driven approach to women&rsquo;s safety through clustering &amp; GPS integration.
+    Cluster + benchmark figures are generated from synthetic demo data.
+  </footer>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  {% block extra_scripts %}{% endblock %}
+</body>
+</html>
