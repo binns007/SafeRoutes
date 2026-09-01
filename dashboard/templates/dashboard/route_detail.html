@@ -25,12 +25,14 @@
 
   <div class="card">
     <h2>Alerts on this journey</h2>
+    <p class="alert-note">Shown to you only, in the app &mdash; SafeRoutes never contacts emergency contacts or authorities on your behalf.</p>
     {% if alerts %}
       {% for a in alerts %}
         <div class="alert-row">
           <span class="alert-icon {{ a.severity }}"></span>
-          <div>
+          <div style="flex:1;">
             <strong>{{ a.get_severity_display }}</strong>
+            {% if a.acknowledged %}<span class="ack-chip">{{ a.get_user_response_display|default:"Acknowledged" }}</span>{% endif %}
             <div style="font-size:0.85rem;color:var(--text-muted);">{{ a.message }}</div>
           </div>
         </div>

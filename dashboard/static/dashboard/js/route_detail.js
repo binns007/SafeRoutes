@@ -8,9 +8,44 @@
     maxZoom: 13,
   }).addTo(map);
 
+  function worstAlert(alerts) {
+    const unseen = alerts.filter((a) => !a.acknowledged);
+    if (!unseen.length) return null;
+    const critical = unseen.find((a) => a.severity === "critical");
+    return critical || unseen[0];
+  }
+
+  function maybeShowAlertPopup(data) {
+    const alert = worstAlert(data.alerts || []);
+    if (!alert) return;
+
+    const extraCount = data.alerts.filter((a) => !a.acknowledged).length - 1;
+    window.SafeRoutesAlertModal.show({
+      severity: alert.severity,
+      title: alert.severity === "critical" ? "You're in a high-risk zone" : "Route deviation detected",
+      message: alert.message,
+      subtext: extraCount > 0
+        ? `+ ${extraCount} more alert${extraCount === 1 ? "" : "s"} on this journey.`
+        : "This alert is shown to you only. SafeRoutes does not contact anyone on your behalf.",
+      onReroute: () => {
+        window.SafeRoutesAlertModal.postAction(`/api/routes/${ROUTE_ID}/reroute/`)
+          .then(() => window.location.reload());
+      },
+      onContinue: () => {
+        window.SafeRoutesAlertModal.postAction(`/api/routes/${ROUTE_ID}/acknowledge/`, "continued")
+          .then(() => window.location.reload());
+      },
+      onDismiss: () => {
+        window.SafeRoutesAlertModal.postAction(`/api/routes/${ROUTE_ID}/acknowledge/`, "dismissed")
+          .then(() => window.location.reload());
+      },
+    });
+  }
+
   fetch(`/api/routes/${ROUTE_ID}/`)
     .then((r) => r.json())
     .then((data) => {
+      maybeShowAlertPopup(data);
       const bounds = [];
 
       // planned path

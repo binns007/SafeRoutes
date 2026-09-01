@@ -19,7 +19,10 @@
     <a href="{% url 'dashboard:home' %}" class="brand">
       <span class="brand-mark"></span> SafeRoutes
     </a>
-    <div class="nav-links">
+    <button type="button" class="nav-toggle" id="nav-toggle" aria-expanded="false" aria-controls="nav-links" aria-label="Toggle menu">
+      <span></span><span></span><span></span>
+    </button>
+    <div class="nav-links" id="nav-links">
       <a href="{% url 'dashboard:home' %}" class="{% block nav_home %}{% endblock %}">Overview</a>
       <a href="{% url 'dashboard:heatmap' %}" class="{% block nav_heatmap %}{% endblock %}">Safety Map</a>
       <a href="{% url 'dashboard:route_planner' %}" class="{% block nav_plan %}{% endblock %}">Plan a Route</a>
@@ -32,12 +35,18 @@
     {% block content %}{% endblock %}
   </main>
 
+  {# Shared popup-alert modal root: user-only alerts, never sent to any third party #}
+  <div id="sr-modal-root"></div>
+  <form id="sr-csrf-form" style="display:none;">{% csrf_token %}</form>
+
   <footer class="site-footer">
     SafeRoutes &mdash; a data-driven approach to women&rsquo;s safety through clustering &amp; GPS integration.
     Cluster + benchmark figures are generated from synthetic demo data.
   </footer>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="{% static 'dashboard/js/nav.js' %}"></script>
+  <script src="{% static 'dashboard/js/alert_modal.js' %}"></script>
   {% block extra_scripts %}{% endblock %}
 </body>
 </html>

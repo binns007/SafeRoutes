@@ -42,34 +42,36 @@
   <div class="grid grid-2" style="margin-top:22px;">
     <div class="card">
       <h2>Districts &amp; scores</h2>
-      <table class="data-table">
-        <thead>
-          <tr>
-            <th>District</th>
-            <th>Tier</th>
-            <th>Safety score</th>
-            <th>Crime / 100k</th>
-            <th>Police / 100k</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for d in districts %}
+      <div class="table-scroll">
+        <table class="data-table">
+          <thead>
             <tr>
-              <td>{{ d.name }}</td>
-              <td>
-                {% with a=d.cluster_assignment %}
-                  {% if a %}
-                    <span class="tier-chip" style="background:{{ a.cluster.color_hex }}">{{ a.cluster.tier }}</span>
-                  {% endif %}
-                {% endwith %}
-              </td>
-              <td class="mono">{% if d.cluster_assignment %}{{ d.cluster_assignment.safety_score|floatformat:1 }}{% else %}&mdash;{% endif %}</td>
-              <td class="mono">{{ d.crime_rate_per_100k|floatformat:1 }}</td>
-              <td class="mono">{{ d.police_per_100k|floatformat:1 }}</td>
+              <th>District</th>
+              <th>Tier</th>
+              <th>Safety score</th>
+              <th>Crime / 100k</th>
+              <th>Police / 100k</th>
             </tr>
-          {% endfor %}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {% for d in districts %}
+              <tr>
+                <td>{{ d.name }}</td>
+                <td>
+                  {% with a=d.cluster_assignment %}
+                    {% if a %}
+                      <span class="tier-chip" style="background:{{ a.cluster.color_hex }}">{{ a.cluster.tier }}</span>
+                    {% endif %}
+                  {% endwith %}
+                </td>
+                <td class="mono">{% if d.cluster_assignment %}{{ d.cluster_assignment.safety_score|floatformat:1 }}{% else %}&mdash;{% endif %}</td>
+                <td class="mono">{{ d.crime_rate_per_100k|floatformat:1 }}</td>
+                <td class="mono">{{ d.police_per_100k|floatformat:1 }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
     </div>
 
     <div class="card">

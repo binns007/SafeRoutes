@@ -1,6 +1,9 @@
+import json
+
 from django.shortcuts import render, redirect, get_object_or_404
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponseNotAllowed
 from django.urls import reverse
+from django.views.decorators.http import require_POST
 
 from core.models import District
 from clustering.models import SafetyCluster, DistrictClusterAssignment
@@ -91,9 +94,11 @@ def api_route_data(request, route_id):
         "nearest_district": p.nearest_district.name if p.nearest_district else None,
     } for p in route.pings.all()]
     alerts = [{
+        "id": a.id,
         "sequence": a.ping.sequence,
         "severity": a.severity,
         "message": a.message,
+        "acknowledged": a.acknowledged,
     } for a in route.alerts.select_related("ping").all()]
     return JsonResponse({
         "source": route.source.name,
@@ -104,3 +109,41 @@ def api_route_data(request, route_id):
         "pings": pings,
         "alerts": alerts,
     })
+
+
+@require_POST
+def api_route_reroute(request, route_id):
+    """
+    "Reroute me" popup action. Re-simulates the journey with no injected
+    deviation, i.e. snaps the vehicle back onto the safe planned path.
+    Any alerts from the previous (deviated) run are cleared along with it,
+    since simulate_journey() wipes and regenerates pings/alerts for the route.
+    """
+    route = get_object_or_404(Route, pk=route_id)
+    simulate_journey(route, inject_deviation=False)
+    return JsonResponse({"status": "rerouted"})
+
+
+@require_POST
+def api_route_acknowledge(request, route_id):
+    """
+    "I'm okay, continue" / "Dismiss" popup actions. Marks the route's
+    currently-unresolved alerts as acknowledged by the user, recording which
+    choice they made, so the popup doesn't reappear for the same alerts.
+    Does NOT notify anyone else -- this only updates local alert state.
+    """
+    route = get_object_or_404(Route, pk=route_id)
+    try:
+        payload = json.loads(request.body or "{}")
+    except json.JSONDecodeError:
+        payload = {}
+    choice = payload.get("choice")
+    if choice not in {"continued", "dismissed"}:
+        return JsonResponse({"error": "invalid choice"}, status=400)
+
+    updated = route.alerts.filter(acknowledged=False).update(
+        acknowledged=True,
+        user_response=choice,
+        resolved=(choice == "continued"),
+    )
+    return JsonResponse({"status": "ok", "updated": updated})

@@ -61,3 +61,6 @@ class District(models.Model):
             self.police_per_100k = round(self.police_strength / self.population * 100_000, 3)
         if state_avg_literacy is not None:
             self.literacy_disparity = round(abs(self.literacy_rate - state_avg_literacy), 3)
+
+
+

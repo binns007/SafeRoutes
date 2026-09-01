@@ -118,6 +118,34 @@ a { color: var(--ink-navy); }
   color: #fff;
 }
 
+/* hamburger button -- hidden on desktop, shown on mobile */
+.nav-toggle {
+  display: none;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+  width: 40px;
+  height: 40px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  margin-left: auto;
+}
+
+.nav-toggle span {
+  display: block;
+  width: 22px;
+  height: 2px;
+  background: #fff;
+  border-radius: 2px;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+body.sr-nav-open .nav-toggle span:nth-child(1) { transform: translateY(6px) rotate(45deg); }
+body.sr-nav-open .nav-toggle span:nth-child(2) { opacity: 0; }
+body.sr-nav-open .nav-toggle span:nth-child(3) { transform: translateY(-6px) rotate(-45deg); }
+
 /* ---------- layout ---------- */
 
 .page {
@@ -344,4 +372,236 @@ footer.site-footer {
   color: var(--text-muted);
   font-size: 0.82rem;
   padding: 30px 20px 50px;
+}
+
+/* ---------- misc small components ---------- */
+
+.alert-note {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin: -6px 0 14px;
+}
+
+.ack-chip {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  background: #eef1f7;
+  color: var(--text-muted);
+}
+
+.table-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ==========================================================================
+   Popup alert modal
+   User-facing only -- shown when a route deviates into an unsafe zone.
+   SafeRoutes never sends this to a third party (contacts/authorities).
+   ========================================================================== */
+
+body.sr-modal-open {
+  overflow: hidden;
+}
+
+.sr-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(19, 27, 51, 0.55);
+  backdrop-filter: blur(2px);
+  z-index: 200;
+  animation: sr-fade-in 0.15s ease;
+}
+
+.sr-modal-sheet {
+  position: fixed;
+  z-index: 201;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: min(420px, calc(100vw - 40px));
+  background: var(--paper);
+  border-radius: var(--radius-lg);
+  padding: 26px 26px 22px;
+  box-shadow: 0 20px 60px -10px rgba(19, 27, 51, 0.45);
+  animation: sr-pop-in 0.18s ease;
+  border-top: 5px solid var(--beacon-amber);
+}
+
+.sr-modal-sheet.sr-modal-critical {
+  border-top-color: var(--risk-coral);
+}
+
+.sr-modal-badge {
+  display: inline-block;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: rgba(242, 166, 90, 0.15);
+  color: #a15c1f;
+  margin-bottom: 10px;
+}
+
+.sr-modal-critical .sr-modal-badge {
+  background: rgba(232, 84, 107, 0.15);
+  color: #a3253b;
+}
+
+.sr-modal-sheet h3 {
+  margin: 0 0 8px;
+  font-size: 1.25rem;
+}
+
+.sr-modal-message {
+  margin: 0 0 6px;
+  color: var(--text-slate);
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.sr-modal-subtext {
+  margin: 0 0 4px;
+  color: var(--text-muted);
+  font-size: 0.82rem;
+}
+
+.sr-modal-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 18px;
+}
+
+.sr-modal-actions .btn {
+  width: 100%;
+  text-align: center;
+}
+
+.sr-btn-dismiss {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  padding: 8px;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+@keyframes sr-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes sr-pop-in {
+  from { opacity: 0; transform: translate(-50%, -46%) scale(0.97); }
+  to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+}
+
+/* on small screens, the modal becomes a bottom sheet -- easier to reach
+   with a thumb and feels native on mobile */
+@media (max-width: 560px) {
+  .sr-modal-sheet {
+    left: 0;
+    top: auto;
+    bottom: 0;
+    transform: none;
+    width: 100%;
+    max-width: none;
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    padding: 22px 20px calc(22px + env(safe-area-inset-bottom, 0px));
+    animation: sr-slide-up 0.2s ease;
+  }
+
+  @keyframes sr-slide-up {
+    from { transform: translateY(100%); }
+    to { transform: translateY(0); }
+  }
+}
+
+/* ==========================================================================
+   Mobile responsiveness
+   ========================================================================== */
+
+@media (max-width: 780px) {
+  .topnav {
+    padding: 0 16px;
+    flex-wrap: wrap;
+    height: auto;
+    min-height: 56px;
+  }
+
+  .nav-toggle { display: flex; }
+
+  .nav-links {
+    display: none;
+    flex-direction: column;
+    width: 100%;
+    gap: 2px;
+    padding: 8px 0 14px;
+  }
+
+  .nav-links.open { display: flex; }
+
+  .nav-links a {
+    padding: 12px 10px;
+    font-size: 1rem;
+  }
+
+  .page {
+    padding: 20px 16px 48px;
+  }
+
+  h1 { font-size: 1.5rem; }
+  h2 { font-size: 1.15rem; }
+
+  .grid { gap: 14px; }
+
+  .card {
+    padding: 16px 16px;
+  }
+
+  #map { height: 340px; }
+  #route-map { height: 320px; }
+
+  .legend {
+    font-size: 0.76rem;
+    gap: 10px;
+  }
+
+  .btn, .btn-ghost {
+    width: 100%;
+    text-align: center;
+    padding: 13px 18px;
+  }
+
+  form .btn { width: 100%; }
+
+  .alert-row {
+    flex-wrap: wrap;
+  }
+
+  .alert-row a.btn-ghost {
+    width: auto;
+    margin-top: 8px;
+  }
+
+  .page-header p.lede {
+    font-size: 0.92rem;
+  }
+
+  .stat-value { font-size: 1.5rem; }
+}
+
+@media (max-width: 420px) {
+  .page { padding: 16px 12px 40px; }
+  .card { padding: 14px 14px; }
+  #map { height: 280px; }
+  #route-map { height: 260px; }
 }
