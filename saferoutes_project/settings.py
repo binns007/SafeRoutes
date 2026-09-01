@@ -124,7 +124,7 @@ USE_TZ = True
 STATIC_URL = 'static/'
 # dashboard/static/dashboard/... is auto-discovered by the AppDirectoriesFinder
 
-
+STATIC_ROOT = BASE_DIR / "staticfiles"
 # Email
 # https://docs.djangoproject.com/en/6.1/topics/email/#topic-email-configuration
 
