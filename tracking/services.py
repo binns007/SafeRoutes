@@ -8,6 +8,11 @@ output on top to (a) report how safe the planned path is and (b) simulate
 GPS pings, flagging any deviation into an unsafe zone. Swap `plan_route`
 for a call to Google Maps Directions API / OSRM to get real road geometry
 without changing anything downstream.
+
+`record_live_ping` is the real-GPS counterpart to `simulate_journey`: it
+ingests one actual fix from the user's device (via the browser's
+Geolocation API, see dashboard/static/dashboard/js/route_detail.js) instead
+of a synthetic waypoint walk.
 """
 import math
 import random
@@ -49,6 +54,17 @@ def _district_safety(district):
         return assignment.safety_score, assignment.cluster.tier
     except DistrictClusterAssignment.DoesNotExist:
         return None, None
+
+
+def _distance_to_path_km(lat, lon, waypoints):
+    """Shortest distance from a point to any vertex of the planned path.
+
+    The planned path only has WAYPOINT_COUNT vertices, which is coarse but
+    good enough for the safety-buffer check at district scale; swap for a
+    proper point-to-polyline distance if `plan_route` starts returning
+    real road geometry with many more points.
+    """
+    return min(haversine_km(lat, lon, wp[0], wp[1]) for wp in waypoints)
 
 
 def plan_route(source: District, destination: District) -> Route:
@@ -137,3 +153,46 @@ def simulate_journey(route: Route, inject_deviation: bool = True):
             alerts.append(alert)
 
     return pings, alerts
+
+
+def record_live_ping(route: Route, lat: float, lon: float):
+    """
+    Real-GPS counterpart to simulate_journey(): ingest one actual fix from
+    the user's device (browser Geolocation API), evaluate it against the
+    safety clusters and the planned path, and raise an Alert if the device
+    has strayed into a high-risk zone beyond the safety buffer.
+
+    Unlike simulate_journey(), this appends to the route's existing pings
+    rather than wiping them, since live fixes arrive one at a time over the
+    course of an actual journey.
+    """
+    nearest, _dist_km = nearest_district(lat, lon)
+    score, tier = _district_safety(nearest)
+    deviation_km = _distance_to_path_km(lat, lon, route.waypoints)
+    in_unsafe = bool(tier in UNSAFE_TIERS and deviation_km > route.safety_buffer_km)
+
+    next_sequence = route.pings.count()
+    ping = GPSPing.objects.create(
+        route=route,
+        sequence=next_sequence,
+        latitude=round(lat, 6),
+        longitude=round(lon, 6),
+        nearest_district=nearest,
+        safety_score_at_point=score,
+        in_unsafe_zone=in_unsafe,
+    )
+
+    alert = None
+    if in_unsafe:
+        alert = Alert.objects.create(
+            route=route,
+            ping=ping,
+            severity="critical" if (score or 100) < 35 else "warning",
+            message=(
+                f"Live location deviation detected near {nearest.name}: "
+                f"{deviation_km:.1f} km off the planned path, inside a "
+                f"Tier {tier} zone (safety score {score:.0f}/100)."
+            ),
+        )
+
+    return ping, alert

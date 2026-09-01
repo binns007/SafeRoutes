@@ -8,7 +8,7 @@ from django.views.decorators.http import require_POST
 from core.models import District
 from clustering.models import SafetyCluster, DistrictClusterAssignment
 from tracking.models import Route, Alert
-from tracking.services import plan_route, simulate_journey
+from tracking.services import plan_route, simulate_journey, record_live_ping
 
 
 def home(request):
@@ -147,3 +147,43 @@ def api_route_acknowledge(request, route_id):
         resolved=(choice == "continued"),
     )
     return JsonResponse({"status": "ok", "updated": updated})
+
+
+@require_POST
+def api_route_live_ping(request, route_id):
+    """
+    Ingests one real GPS fix from the user's browser (navigator.geolocation,
+    see route_detail.js's "Track my live location" button) for a route
+    already in progress, evaluates it against the safety clusters and
+    planned path, and returns any alert raised so the frontend can pop it
+    up (with sound) immediately. The coordinates are used only to answer
+    this request and are stored as a GPSPing on this route -- SafeRoutes
+    does not share live location with any third party.
+    """
+    route = get_object_or_404(Route, pk=route_id)
+    try:
+        payload = json.loads(request.body or "{}")
+        lat = float(payload["lat"])
+        lon = float(payload["lon"])
+    except (json.JSONDecodeError, KeyError, TypeError, ValueError):
+        return JsonResponse({"error": "lat and lon are required"}, status=400)
+
+    ping, alert = record_live_ping(route, lat, lon)
+    return JsonResponse({
+        "status": "ok",
+        "ping": {
+            "sequence": ping.sequence,
+            "lat": ping.latitude,
+            "lon": ping.longitude,
+            "in_unsafe_zone": ping.in_unsafe_zone,
+            "safety_score": ping.safety_score_at_point,
+            "nearest_district": ping.nearest_district.name if ping.nearest_district else None,
+        },
+        "alert": ({
+            "id": alert.id,
+            "sequence": alert.ping.sequence,
+            "severity": alert.severity,
+            "message": alert.message,
+            "acknowledged": alert.acknowledged,
+        } if alert else None),
+    })
