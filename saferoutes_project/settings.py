@@ -123,6 +123,29 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
+
+# Hashed static-file storage: every time collectstatic runs, each file's
+# content hash gets baked into its filename (e.g. style.a1b2c3d4.css) and
+# every {% static %} tag in the templates automatically resolves to that
+# hashed name. Because the filename itself changes whenever the file's
+# contents change, browsers can never serve a stale cached copy of CSS/JS
+# after a deploy -- there's nothing to invalidate, the URL is just new.
+# WhiteNoise then serves these hashed files with a far-future cache header,
+# which is safe specifically because of the hash-on-change behavior above.
+#
+# NOTE: run `python manage.py collectstatic` after every deploy (or every
+# local change you want reflected) -- this is what generates the hashed
+# filenames and the manifest that maps original name -> hashed name. Files
+# referenced via {% static %} that haven't been collected yet will 404.
+STORAGES = {
+    "default": {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
+    },
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+    },
+}
+
 # Email
 # https://docs.djangoproject.com/en/6.1/topics/email/#topic-email-configuration
 

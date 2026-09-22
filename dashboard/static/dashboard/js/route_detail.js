@@ -3,10 +3,14 @@
   if (!mapEl) return;
 
   const map = L.map("route-map").setView([10.4, 76.4], 8);
-  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-    attribution: "&copy; OpenStreetMap contributors",
-    maxZoom: 13,
-  }).addTo(map);
+  L.tileLayer(
+    "https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}",
+    {
+      attribution:
+        "Tiles &copy; Esri &mdash; Esri, HERE, Garmin, USGS, EPA, NPS",
+      maxZoom: 13,
+    }
+  ).addTo(map);
 
   const liveBtn = document.getElementById("live-track-btn");
   const liveStatus = document.getElementById("live-track-status");

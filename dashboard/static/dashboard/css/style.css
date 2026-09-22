@@ -402,6 +402,13 @@ footer.site-footer {
    Popup alert modal
    User-facing only -- shown when a route deviates into an unsafe zone.
    SafeRoutes never sends this to a third party (contacts/authorities).
+
+   NOTE: Leaflet assigns its own panes/controls z-index values up to 1000
+   (see .leaflet-top/.leaflet-bottom -> z-index:1000 in leaflet.css). The
+   modal backdrop/sheet must sit above that or the map (tiles, zoom
+   controls, popups) will visually cover the alert instead of sitting
+   beneath it. 9999/10000 gives it a comfortable margin above any current
+   or future Leaflet pane.
    ========================================================================== */
 
 body.sr-modal-open {
@@ -413,13 +420,13 @@ body.sr-modal-open {
   inset: 0;
   background: rgba(19, 27, 51, 0.55);
   backdrop-filter: blur(2px);
-  z-index: 200;
+  z-index: 9999;
   animation: sr-fade-in 0.15s ease;
 }
 
 .sr-modal-sheet {
   position: fixed;
-  z-index: 201;
+  z-index: 10000;
   left: 50%;
   top: 50%;
   transform: translate(-50%, -50%);

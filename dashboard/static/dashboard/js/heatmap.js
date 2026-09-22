@@ -4,10 +4,14 @@
 
   const map = L.map("map", { scrollWheelZoom: true }).setView([10.4, 76.4], 7);
 
-  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-    attribution: "&copy; OpenStreetMap contributors",
-    maxZoom: 12,
-  }).addTo(map);
+  L.tileLayer(
+    "https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}",
+    {
+      attribution:
+        "Tiles &copy; Esri &mdash; Esri, HERE, Garmin, USGS, EPA, NPS",
+      maxZoom: 12,
+    }
+  ).addTo(map);
 
   fetch("/api/clusters/")
     .then((r) => r.json())
